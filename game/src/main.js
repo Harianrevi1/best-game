@@ -181,18 +181,18 @@ function drawBackground() {
   }
   ctx.restore();
 
-  // Moon.
-  const mg = ctx.createRadialGradient(1120, 92, 6, 1120, 92, 90);
+  // Moon, top center — kept clear of both HUD corners.
+  const mg = ctx.createRadialGradient(640, 78, 6, 640, 78, 90);
   mg.addColorStop(0, 'rgba(255, 246, 214, 0.95)');
   mg.addColorStop(0.25, 'rgba(255, 246, 214, 0.28)');
   mg.addColorStop(1, 'rgba(255, 246, 214, 0)');
   ctx.fillStyle = mg;
   ctx.beginPath();
-  ctx.arc(1120, 92, 90, 0, Math.PI * 2);
+  ctx.arc(640, 78, 90, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = '#fff6d6';
   ctx.beginPath();
-  ctx.arc(1120, 92, 30, 0, Math.PI * 2);
+  ctx.arc(640, 78, 30, 0, Math.PI * 2);
   ctx.fill();
 
   // Distant hills.
@@ -236,6 +236,8 @@ function tick(dt) {
   if (state.messageT > 0) state.messageT -= dt;
   if (state.shakeT > 0) state.shakeT -= dt;
   if (state.overLockT > 0) state.overLockT -= dt;
+  // Off-game screens show a warm ambient sky instead of the real mix.
+  field.ambient = state.mode !== 'playing';
 
   if (state.mode === 'playing') {
     if (state.comboT > 0) {
@@ -350,7 +352,7 @@ if (shot === 'start') {
   state.level = 2;
   state.flares = 2;
   field.setLevel(2);
-  simulate(120, true);
+  simulate(300, true);
   drawFrame();
   window.__emberfallReady = true;
 } else if (shot === 'end') {
@@ -358,7 +360,7 @@ if (shot === 'start') {
   state.score = 1240;
   state.best = 1240;
   state.level = 4;
-  simulate(60, false);
+  simulate(150, false);
   drawFrame();
   window.__emberfallReady = true;
 } else {

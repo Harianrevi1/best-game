@@ -13,6 +13,9 @@ export class EmberField {
     this.items = [];
     this.spawnTimer = 0.4;
     this.level = 1;
+    // Ambient mode (title / game-over backdrops): only orange embers fall,
+    // so the menu screens read warm instead of grey.
+    this.ambient = false;
   }
 
   reset() {
@@ -61,7 +64,7 @@ export class EmberField {
     this.spawnTimer -= dt;
     const interval = Math.max(0.34, 0.92 - this.level * 0.075);
     if (this.spawnTimer <= 0) {
-      this.spawnOne();
+      this.spawnOne(this.ambient ? 'ember' : null);
       if (this.level >= 3 && this.rng() < 0.35) this.spawnOne();
       this.spawnTimer = interval * (0.75 + this.rng() * 0.5);
     }

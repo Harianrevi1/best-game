@@ -39,10 +39,11 @@ export function drawHud(ctx, s) {
   const dots = '●'.repeat(s.flares) + '○'.repeat(Math.max(0, s.maxFlares - s.flares));
   ctx.fillText(`FLARE ${dots}  [SPACE]`, w - 28, 146);
 
-  // Mute hint, bottom right.
+  // Mute hint, bottom left (kept clear of the brazier).
+  ctx.textAlign = 'left';
   ctx.fillStyle = 'rgba(205,211,255,0.55)';
   ctx.font = '600 15px system-ui, sans-serif';
-  ctx.fillText(s.muted ? 'MUTED  [M]' : 'SOUND ON  [M]', w - 28, s.h - 18);
+  ctx.fillText(s.muted ? 'MUTED  [M]' : 'SOUND ON  [M]', 28, s.h - 18);
 
   // Center flash message (level up, flare, ash hit...).
   if (s.message && s.messageT > 0) {
@@ -94,7 +95,7 @@ export function drawTitle(ctx, w, h, time) {
   ctx.fillText('Catch the falling embers. Dodge the ash.', w / 2, 262);
 
   // How-to-play card.
-  const cw = 660;
+  const cw = 800;
   const ch = 210;
   const cx = w / 2 - cw / 2;
   const cy = 300;
@@ -105,7 +106,7 @@ export function drawTitle(ctx, w, h, time) {
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = '#e8ecff';
-  ctx.font = '600 22px system-ui, sans-serif';
+  ctx.font = '600 21px system-ui, sans-serif';
   const lines = [
     'Ember  +10   ·   Gold ember  +50   ·   streaks build your multiplier',
     'Ash puts out a flame — catch one and you lose a life',
