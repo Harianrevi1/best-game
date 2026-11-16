@@ -339,6 +339,10 @@ function simulate(ticks, autoPlay) {
   }
 }
 
+// Debug hook for play-testing (read-only state plus the two player
+// actions). Harmless in normal play; the game never reads it.
+window.__emberfall = { state, startGame, useFlare };
+
 if (shot === 'start') {
   state.mode = 'title';
   simulate(150, false);
