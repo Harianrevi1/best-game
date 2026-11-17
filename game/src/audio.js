@@ -58,6 +58,13 @@ export class SoundBank {
     this._blip(1760, 1760, 0.22, 'sine', 0.10, 0.14);
   }
 
+  // Frost: a cold shimmer — two high notes a fifth apart, the second
+  // hanging a little longer, like ice catching light.
+  frostNote() {
+    this._blip(1568, 1568, 0.16, 'sine', 0.14);
+    this._blip(2093, 2093, 0.26, 'sine', 0.10, 0.08);
+  }
+
   ashThud() {
     this._blip(160, 55, 0.28, 'sawtooth', 0.20);
     this._blip(90, 40, 0.32, 'triangle', 0.16, 0.02);

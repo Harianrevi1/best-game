@@ -16,9 +16,22 @@ export function drawHud(ctx, s) {
   // Combo multiplier, under the score.
   if (s.combo >= 2) {
     const multColor = s.mult >= 4 ? '#ffd94d' : s.mult >= 3 ? '#ff9a3c' : '#ffb347';
+    ctx.save();
+    if (s.mult >= 3) {
+      ctx.shadowColor = multColor;
+      ctx.shadowBlur = 18;
+    }
     ctx.fillStyle = multColor;
     ctx.font = '800 30px system-ui, sans-serif';
     ctx.fillText(`COMBO x${s.mult}  (${s.combo})`, 28, 134);
+    ctx.restore();
+  }
+
+  // Frost slow-down, counting down under the combo line.
+  if (s.slowT > 0) {
+    ctx.fillStyle = '#7fd4ff';
+    ctx.font = '800 24px system-ui, sans-serif';
+    ctx.fillText(`FROST — TIME SLOWS ${s.slowT.toFixed(1)}s`, 28, 168);
   }
 
   // Lives as flame icons, top right.
@@ -95,10 +108,10 @@ export function drawTitle(ctx, w, h, time) {
   ctx.fillText('Catch the falling embers. Dodge the ash.', w / 2, 262);
 
   // How-to-play card.
-  const cw = 800;
-  const ch = 210;
+  const cw = 860;
+  const ch = 238;
   const cx = w / 2 - cw / 2;
-  const cy = 300;
+  const cy = 292;
   ctx.fillStyle = 'rgba(10, 14, 40, 0.72)';
   ctx.strokeStyle = 'rgba(255, 179, 71, 0.45)';
   ctx.lineWidth = 2;
@@ -109,11 +122,12 @@ export function drawTitle(ctx, w, h, time) {
   ctx.font = '600 21px system-ui, sans-serif';
   const lines = [
     'Ember  +10   ·   Gold ember  +50   ·   streaks build your multiplier',
+    'Frost ember  +15 — slows every fall for 4 seconds',
     'Ash puts out a flame — catch one and you lose a life',
     'SPACE unleashes a Flare: clears the sky (limited charges)',
     'Move with MOUSE or Left / Right arrows or A D  ·  M mutes  ·  R restarts',
   ];
-  lines.forEach((line, i) => ctx.fillText(line, w / 2, cy + 48 + i * 38));
+  lines.forEach((line, i) => ctx.fillText(line, w / 2, cy + 44 + i * 36));
 
   // Start prompt, pulsing.
   const pulse = 0.65 + Math.sin(time * 3) * 0.35;
@@ -124,7 +138,7 @@ export function drawTitle(ctx, w, h, time) {
   ctx.restore();
 }
 
-export function drawGameOver(ctx, w, h, score, best, time) {
+export function drawGameOver(ctx, w, h, score, best, time, stats = {}) {
   ctx.save();
   ctx.fillStyle = 'rgba(5, 7, 20, 0.62)';
   ctx.fillRect(0, 0, w, h);
@@ -146,11 +160,18 @@ export function drawGameOver(ctx, w, h, score, best, time) {
   ctx.font = '600 24px system-ui, sans-serif';
   ctx.fillText(`Best this session: ${best}`, w / 2, 458);
 
+  // Run stats: what the player actually did, not just the number.
+  const caught = stats.caught ?? 0;
+  const bestCombo = stats.bestCombo ?? 0;
+  ctx.fillStyle = '#e8ecff';
+  ctx.font = '600 22px system-ui, sans-serif';
+  ctx.fillText(`Embers caught: ${caught}   ·   Best streak: ${bestCombo} in a row`, w / 2, 498);
+
   const pulse = 0.65 + Math.sin(time * 3) * 0.35;
   ctx.globalAlpha = pulse;
   ctx.fillStyle = '#ffd94d';
   ctx.font = '800 30px system-ui, sans-serif';
-  ctx.fillText('PRESS R OR CLICK TO PLAY AGAIN', w / 2, 540);
+  ctx.fillText('PRESS R OR CLICK TO PLAY AGAIN', w / 2, 560);
   ctx.restore();
 }
 

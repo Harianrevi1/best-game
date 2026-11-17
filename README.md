@@ -12,12 +12,13 @@ A dark indigo night sky. Embers fall from above, glowing orange and gold, traili
 
 - **Catch embers** to score. Catches in a row build a **combo** (multiplier x2 up to x5).
 - **Golden embers** are worth +50.
+- **Frost embers** (ice blue) are worth +15 and slow every falling ember to less than half speed for 4 seconds — the lifeline when the sky gets crowded.
 - **Ash embers** (grey) must be dodged — catching one costs a life and resets your combo.
 - **Flare** (Spacebar) clears the screen, a limited charge that refills each level.
-- **Levels** rise every 300 points: embers fall faster, more of them, more ash.
-- **3 lives.** Lose them all and the fire goes out — game over, with your score and a restart (R or click).
+- **Levels** rise every 300 points: embers fall faster, more of them, more ash — and frost starts appearing from level 2.
+- **3 lives.** Lose them all and the fire goes out — game over, with your score, embers caught and best streak, and a restart (R or click).
 
-Synthesized WebAudio sounds (no audio files): a catch blip that rises in pitch with your combo, a golden chime, an ash thud, a Flare whoosh, a game-over toll. Mute with M.
+Every catch pops a floating score label and a burst of sparks; the night sky has pine silhouettes, fireflies and the occasional shooting star. Synthesized WebAudio sounds (no audio files): a catch blip that rises in pitch with your combo, a golden chime, a frost shimmer, an ash thud, a Flare whoosh, a game-over toll. Mute with M.
 
 ## Running it
 
@@ -36,13 +37,13 @@ Or serve `game/` with any static HTTP server and open `game/index.html`.
 - `game/index.html` — the page.
 - `game/src/main.js` — game loop, state, deterministic shot modes.
 - `game/src/player.js` — the brazier.
-- `game/src/embers.js` — ember spawning, falling, collisions.
+- `game/src/embers.js` — ember spawning, falling, collisions, frost slow-down.
 - `game/src/particles.js` — sparks and trails.
 - `game/src/audio.js` — synthesized sounds.
 - `game/src/hud.js` — HUD, title screen, game-over screen.
 - `game/src/style.css` — page styling.
 - `vendor/makefun-game.ts` — the kit's dossier library, unchanged.
-- `screenshots/` — 1-start, 2-play, 3-end, real renders of the game.
+- `screenshots/` — 1-start, 2-play, 3-flare, 4-end, real renders of the game (deterministic `?shot=` modes in `main.js`, re-taken with `test-emberfall.py`).
 
 ## License
 

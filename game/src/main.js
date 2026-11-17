@@ -66,7 +66,42 @@ const state = {
   time: 0,
   shakeT: 0,
   overLockT: 0,
+  // Frost slow-down, seconds left (mirrored onto the field each tick).
+  slowT: 0,
+  // Run stats for the game-over screen.
+  caught: 0,
+  bestCombo: 0,
 };
+
+// Floating "+10" / "+50" labels that rise and fade where a catch lands.
+const popups = [];
+
+function addPopup(x, y, text, color) {
+  popups.push({ x, y, text, color, age: 0, life: 1.1 });
+  if (popups.length > 24) popups.shift();
+}
+
+function updatePopups(dt) {
+  for (let i = popups.length - 1; i >= 0; i--) {
+    const p = popups[i];
+    p.age += dt;
+    p.y -= 46 * dt;
+    if (p.age >= p.life) popups.splice(i, 1);
+  }
+}
+
+function drawPopups() {
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.font = '800 26px system-ui, sans-serif';
+  for (const p of popups) {
+    const k = 1 - p.age / p.life;
+    ctx.globalAlpha = Math.min(1, k * 2);
+    ctx.fillStyle = p.color;
+    ctx.fillText(p.text, p.x, p.y);
+  }
+  ctx.restore();
+}
 
 function levelFor(score) {
   return 1 + Math.floor(score / 300);
@@ -106,13 +141,30 @@ function onCatch(item) {
   state.combo += 1;
   state.comboT = 1.2;
   state.mult = Math.min(1 + Math.floor(state.combo / 4), 5);
+  state.bestCombo = Math.max(state.bestCombo, state.combo);
+  state.caught += 1;
+  if (item.type === 'frost') {
+    // Frost is worth a little on its own, and its real prize is time:
+    // four slow seconds to untangle a crowded sky.
+    state.slowT = 4;
+    field.slowT = 4;
+    const color = '#7fd4ff';
+    particles.burst(item.x, item.y, color, 30, 170);
+    addScore(15);
+    addPopup(item.x, item.y - 14, `+${15 * state.mult}`, color);
+    sounds.frostNote();
+    flash('FROST! TIME SLOWS', '#7fd4ff');
+    return;
+  }
   const color = item.type === 'gold' ? '#ffd94d' : '#ff9a3c';
   particles.burst(item.x, item.y, color, item.type === 'gold' ? 30 : 14, 170);
   if (item.type === 'gold') {
     addScore(50);
+    addPopup(item.x, item.y - 14, `+${50 * state.mult}`, color);
     sounds.goldNote();
   } else {
     addScore(10);
+    addPopup(item.x, item.y - 14, `+${10 * state.mult}`, color);
     sounds.catchNote(state.combo);
   }
 }
@@ -125,7 +177,9 @@ function onGround(item) {
     state.comboT = 0;
     state.mult = 1;
   }
-  particles.burst(item.x, H - 16, item.type === 'ash' ? '#565b6e' : '#ff9a3c', 6, 60);
+  const color =
+    item.type === 'ash' ? '#565b6e' : item.type === 'frost' ? '#7fd4ff' : '#ff9a3c';
+  particles.burst(item.x, H - 16, color, 6, 60);
 }
 
 function useFlare() {
@@ -148,9 +202,14 @@ function startGame() {
   state.flares = 1;
   state.message = '';
   state.messageT = 0;
+  state.slowT = 0;
+  state.caught = 0;
+  state.bestCombo = 0;
   field.setLevel(1);
   field.reset();
+  field.slowT = 0;
   particles.clear();
+  popups.length = 0;
   brazier.reset();
   sounds.click();
 }
@@ -206,6 +265,58 @@ function drawBackground() {
   ctx.closePath();
   ctx.fill();
 
+  // Pine silhouettes along the ridge, so the horizon reads as a forest
+  // edge instead of an empty curve.
+  ctx.fillStyle = '#0a0820';
+  const pines = [
+    [70, 52, 668], [150, 40, 678], [250, 58, 664], [340, 44, 672],
+    [430, 54, 666], [520, 38, 680], [900, 48, 670], [990, 56, 664],
+    [1080, 42, 676], [1170, 54, 668], [1240, 40, 678],
+  ];
+  for (const [px, ph, py] of pines) {
+    ctx.beginPath();
+    ctx.moveTo(px - 16, py);
+    ctx.lineTo(px, py - ph);
+    ctx.lineTo(px + 16, py);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillRect(px - 2, py - 4, 4, 6);
+  }
+
+  // Fireflies drifting low over the ground.
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 10; i++) {
+    const fx = (i * 137 + 60 + Math.sin(state.time * 0.5 + i * 2.1) * 26) % W;
+    const fy = H - 120 + ((i * 53) % 90) + Math.sin(state.time * 0.8 + i * 1.3) * 8;
+    ctx.globalAlpha = 0.25 + 0.3 * Math.abs(Math.sin(state.time * 1.4 + i));
+    ctx.fillStyle = '#cfe89a';
+    ctx.beginPath();
+    ctx.arc(fx, fy, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // A shooting star every nine seconds, crossing the upper sky.
+  const cycle = state.time % 9;
+  if (cycle < 1.1) {
+    const k = cycle / 1.1;
+    const sx = 180 + k * 420;
+    const sy = 90 + k * 130;
+    const streak = ctx.createLinearGradient(sx, sy, sx - 90, sy + 42);
+    streak.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+    streak.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    ctx.strokeStyle = streak;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(sx - 90, sy + 42);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   // Warm line along the ground.
   ctx.fillStyle = 'rgba(255, 150, 50, 0.14)';
   ctx.fillRect(0, H - 16, W, 4);
@@ -220,13 +331,17 @@ function drawFrame() {
   drawBackground();
   field.draw(ctx, state.time);
   particles.draw(ctx);
+  drawPopups();
   if (state.mode === 'playing' || state.mode === 'gameover') brazier.draw(ctx);
   if (state.mode === 'playing') {
     drawHud(ctx, { ...state, w: W, h: H });
   } else if (state.mode === 'title') {
     drawTitle(ctx, W, H, state.time);
   } else if (state.mode === 'gameover') {
-    drawGameOver(ctx, W, H, state.score, state.best, state.time);
+    drawGameOver(ctx, W, H, state.score, state.best, state.time, {
+      caught: state.caught,
+      bestCombo: state.bestCombo,
+    });
   }
   ctx.restore();
 }
@@ -236,6 +351,8 @@ function tick(dt) {
   if (state.messageT > 0) state.messageT -= dt;
   if (state.shakeT > 0) state.shakeT -= dt;
   if (state.overLockT > 0) state.overLockT -= dt;
+  if (state.slowT > 0) state.slowT -= dt;
+  updatePopups(dt);
   // Off-game screens show a warm ambient sky instead of the real mix.
   field.ambient = state.mode !== 'playing';
 
@@ -340,8 +457,9 @@ function simulate(ticks, autoPlay) {
 }
 
 // Debug hook for play-testing (read-only state plus the two player
-// actions). Harmless in normal play; the game never reads it.
-window.__emberfall = { state, startGame, useFlare };
+// actions, plus the field and brazier so a test can stage a fall and
+// watch it land). Harmless in normal play; the game never reads it.
+window.__emberfall = { state, startGame, useFlare, field, brazier };
 
 if (shot === 'start') {
   state.mode = 'title';
@@ -350,13 +468,39 @@ if (shot === 'start') {
   window.__emberfallReady = true;
 } else if (shot === 'play') {
   startGame();
-  state.score = 180;
-  state.combo = 6;
-  state.mult = 2;
-  state.level = 2;
+  state.score = 340;
+  state.combo = 9;
+  state.mult = 3;
+  state.level = 3;
   state.flares = 2;
-  field.setLevel(2);
+  field.setLevel(3);
   simulate(300, true);
+  // Crowd the sky for the frame: a burst of fresh embers at spread
+  // heights, one of them frost, then a few more ticks so trails, a catch
+  // burst and a floating score label are all in the picture.
+  field.burstSky(9);
+  field.spawnOne('frost');
+  field.items[field.items.length - 1].y = 240;
+  field.spawnOne('gold');
+  field.items[field.items.length - 1].y = 150;
+  simulate(24, true);
+  drawFrame();
+  window.__emberfallReady = true;
+} else if (shot === 'flare') {
+  // The Flare power-up mid-burst: a crowded sky, then SPACE — every
+  // falling item bursts into blue sparks at once.
+  startGame();
+  state.score = 340;
+  state.combo = 9;
+  state.mult = 3;
+  state.level = 3;
+  state.flares = 2;
+  field.setLevel(3);
+  simulate(240, true);
+  field.burstSky(10);
+  simulate(12, true);
+  useFlare();
+  simulate(6, false);
   drawFrame();
   window.__emberfallReady = true;
 } else if (shot === 'end') {
@@ -364,6 +508,8 @@ if (shot === 'start') {
   state.score = 1240;
   state.best = 1240;
   state.level = 4;
+  state.caught = 41;
+  state.bestCombo = 9;
   simulate(150, false);
   drawFrame();
   window.__emberfallReady = true;
